@@ -43,7 +43,7 @@ void MyFindClose(HANDLE& h)
     h = INVALID_HANDLE_VALUE;
 }
 
-void MyWriteHex(const char* str)
+void MyWriteHexA(const char* str)
 {
     std::cout << " * | hex| dec" << std::endl;
     std::cout << "---+----+----" << std::endl;
@@ -55,6 +55,17 @@ void MyWriteHex(const char* str)
         uint32_t c_masked = c32 & 0x000000ff; // Get only last 1 byte (= least signifficant byte)
         snprintf(buf, 200, " %c | %02x | %03d", c_masked, c_masked, c_masked);
         std::cout << buf << std::endl;
+    }
+}
+
+void MyWriteHexW(const wchar_t* str)
+{
+    std::cout << " * |  hex | dec" << std::endl;
+    std::cout << "---+------+----" << std::endl;
+    size_t len = wcslen(str);
+    for (size_t i = 0; i < len; ++i)
+    {
+        wprintf(L" %c | %4x | %6d \n", str[i], str[i], str[i]);
     }
 }
 
@@ -96,7 +107,19 @@ int main()
     else
     {
         std::cout <<std::endl << "FindFirstFileA() -> filename: [" << found.cFileName << "]" << std::endl;
-        MyWriteHex(found.cFileName);
+        MyWriteHexA(found.cFileName);
+    }
+
+    WIN32_FIND_DATAW found_w; // Wide version, https://msdn.microsoft.com/en-us/library/windows/desktop/aa365740(v=vs.85).aspx
+    h = FindFirstFileW(L"Pangram*", &found_w);
+    if (h == INVALID_HANDLE_VALUE)
+    {
+        std::cout << "Failed to FindFirstFileW(), GetLastError():" << GetLastError() << std::endl;
+    }
+    else
+    {
+        wprintf_s(L"FindFirstFileW() -> filename [%s]\n", found_w.cFileName);
+        MyWriteHexW(found_w.cFileName);
     }
 
     system("pause");
