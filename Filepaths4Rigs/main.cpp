@@ -83,20 +83,41 @@ void MyCheckCodepages()
     printf("\t printf(): %s\n", cp_info.CodePageName); // Aren't there any conversions?
 }
 
-// Convert a wide Unicode string to an UTF8 string
-// Taken from https://stackoverflow.com/a/3999597
-std::string MyWcharToUtf8(const wchar_t* wstr)
+/// @param wstr _must_ be NUL-terminated!
+/// @author Taken from https://stackoverflow.com/a/3999597
+int CalcUtf8Size(const wchar_t* wstr)
 {
-    const size_t wlen = wcslen(wstr);
-    if( wlen == 0 )
-        return std::string();
+    if (wstr == nullptr || wstr[0] == 0) // NULL or empty string
+    {
+        return 0;
+    }
+    else
+    {
+        // Docs: https://msdn.microsoft.com/en-us/library/windows/desktop/dd374130(v=vs.85).aspx
+        return WideCharToMultiByte(CP_UTF8, 0, &wstr[0], -1, NULL, 0, NULL, NULL);
+    }
+}
 
-    // WideCharToMultiByte(): https://msdn.microsoft.com/en-us/library/dd374130(v=vs.85).aspx
-    int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (wlen + 1), NULL, 0, NULL, NULL);
-    std::string out_str( size_needed, 0 );
-    WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (wlen + 1), &out_str[0], size_needed, NULL, NULL);
+/// @param wstr _must_ be NUL-terminated!
+/// @author Taken from https://stackoverflow.com/a/3999597
+bool WcharToUtf8(char* dst, int dst_size, const wchar_t* wstr)
+{
+    if (dst_size == -1)
+    {
+        dst_size = CalcUtf8Size(wstr);
+    }
+    // Docs: https://msdn.microsoft.com/en-us/library/windows/desktop/dd374130(v=vs.85).aspx
+    return (0 < WideCharToMultiByte(CP_UTF8, 0, &wstr[0], -1, &dst[0], dst_size, NULL, NULL));
+}
 
-    return std::move(out_str);
+/// @param wstr _must_ be NUL-terminated!
+/// @author Taken from https://stackoverflow.com/a/3999597
+std::string WcharToUtf8(const wchar_t* wstr)
+{
+    const int dst_size = CalcUtf8Size(wstr);
+    std::string dst(dst_size, 0); // Construct by length and initial value
+    WcharToUtf8(&dst[0], dst_size, wstr);
+    return std::move(dst);
 }
 
 // Convert an UTF8 string to a wide Unicode String
@@ -107,7 +128,7 @@ std::wstring MyUtf8ToWchar(const std::string &str)
         return std::wstring();
 
     // MultiByteToWideChar(): https://msdn.microsoft.com/en-us/library/windows/desktop/dd319072(v=vs.85).aspx
-    int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
+    int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0); // The initial "Pangram_Příšerně" => 17 bytes
     std::wstring out_wstr( size_needed, 0 );
     MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &out_wstr[0], size_needed);
     return out_wstr;
@@ -154,7 +175,7 @@ int main()
         MyWriteHexW(found_w.cFileName);
 
         // UTF-8 conversion test
-        std::string u8str = MyWcharToUtf8(found_w.cFileName);
+        std::string u8str = WcharToUtf8(found_w.cFileName);
         std::cout << "The above, UTF-8 converted: [" << u8str << "]" <<std::endl;
         printf("\tprintf(): [%s]\n", u8str.c_str());
         MyWriteHexA(u8str.c_str());
