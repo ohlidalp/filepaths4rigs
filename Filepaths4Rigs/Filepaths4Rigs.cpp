@@ -58,6 +58,18 @@ void MyWriteHex(const char* str)
     }
 }
 
+void MyCheckCodepages()
+{
+    UINT cur_ansi_cp = GetACP();
+    CPINFOEXA cp_info;
+    GetCPInfoExA(cur_ansi_cp, 0, &cp_info);
+    std::cout << "Current ANSI codepage: name=["<<cp_info.CodePageName<<"], id="<<cur_ansi_cp<<std::endl;
+
+    UINT cur_oem_cp = GetOEMCP();
+    GetCPInfoExA(cur_oem_cp, 0, &cp_info);
+    std::cout << "Current OEM codepage: name=["<<cp_info.CodePageName<<"], id="<<cur_oem_cp<<std::endl;
+}
+
 int main()
 {
 
@@ -72,6 +84,8 @@ int main()
     MyCloseHandle(h);
 
     // "Listing the Files in a Directory": https://msdn.microsoft.com/en-us/library/windows/desktop/aa365200(v=vs.85).aspx
+
+    MyCheckCodepages();
 
     WIN32_FIND_DATAA found; // ANSI version, https://msdn.microsoft.com/en-us/library/windows/desktop/aa365740(v=vs.85).aspx
     h = FindFirstFileA("Pangram*", &found);
