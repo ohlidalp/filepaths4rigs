@@ -1,4 +1,4 @@
-﻿
+
 #include "stdafx.h"
 
 // === Microsoft Windows OS ====
@@ -6,7 +6,8 @@
 // How is the conversion determined? I was unable to find a clear answer in MSDN.
 
 // NOTE: This file MUST BE Unicode (UTF8 or other).
-//       Saved using VisualStudio2015 as 'UTF8 with signature, codepage 65001'
+//       Saved using VisualStudio2015 as 'UTF8 without signature, codepage 65001'
+// Note that UTF8 signature is generally frowned upon: https://stackoverflow.com/a/2223926
 
 // UNICODE CHARACTERS
 // 'ř' = 'LATIN SMALL LETTER R WITH CARON' (U+0159) http://www.fileformat.info/info/unicode/char/159/index.htm
@@ -15,9 +16,10 @@
 // 'ň' = 'LATIN SMALL LETTER N WITH CARON' (U+0148)
 // 'ě' = 'LATIN SMALL LETTER E WITH CARON' (U+011B)
 
+// ~ Příšerně žluťoučký kůň úpěl ďábelské ódy ~
 // "Terribly yellow-ish horse sung devillish odes" = A pangram for testing Czech special characters
 // Written using escapes, just to be double sure.
-static const wchar_t* HORSE_TEST = L"P\u0159\u00ED\u0161ern\u011B";
+static const wchar_t* TEST_PANGRAM = L"P\u0159\u00ED\u0161ern\u011B";
 
 void MyCloseHandle(HANDLE& h)
 {
@@ -75,17 +77,19 @@ void MyCheckCodepages()
     CPINFOEXA cp_info;
     GetCPInfoExA(cur_ansi_cp, 0, &cp_info);
     std::cout << "Current ANSI codepage: name=["<<cp_info.CodePageName<<"], id="<<cur_ansi_cp<<std::endl;
+    printf("\t printf(): %s\n", cp_info.CodePageName); // Aren't there any conversions?
 
     UINT cur_oem_cp = GetOEMCP();
     GetCPInfoExA(cur_oem_cp, 0, &cp_info);
     std::cout << "Current OEM codepage: name=["<<cp_info.CodePageName<<"], id="<<cur_oem_cp<<std::endl;
+    printf("\t printf(): %s\n", cp_info.CodePageName); // Aren't there any conversions?
 }
 
 int main()
 {
 
     wchar_t horsefile[1000];
-    wsprintf(horsefile, L"Pangram_%s", HORSE_TEST);
+    wsprintf(horsefile, L"Pangram_%s", TEST_PANGRAM);
 
     HANDLE h = CreateFileW(horsefile, (GENERIC_READ | GENERIC_WRITE), 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (h == INVALID_HANDLE_VALUE)
