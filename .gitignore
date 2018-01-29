@@ -1,0 +1,11 @@
+## Visual studio
+
+*.sdf
+*.opensdf
+Debug
+Release
+ipch
+.vs
+
+## Test files
+Pangram*
