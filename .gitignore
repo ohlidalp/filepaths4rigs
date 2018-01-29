@@ -6,6 +6,8 @@ Debug
 Release
 ipch
 .vs
+*.VC.db
+*.VC.opendb
 
 ## Test files
 Pangram*
