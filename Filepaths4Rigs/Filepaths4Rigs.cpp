@@ -52,11 +52,9 @@ void MyWriteHexA(const char* str)
     size_t len = strlen(str);
     for (size_t i = 0; i < len; ++i)
     {
-        char buf[200];
         uint32_t c32 = str[i];
         uint32_t c_masked = c32 & 0x000000ff; // Get only last 1 byte (= least signifficant byte)
-        snprintf(buf, 200, " %c | %02x | %03d", c_masked, c_masked, c_masked);
-        std::cout << buf << std::endl;
+        wprintf(L" %c | %2x | %3d\n", c_masked, c_masked, c_masked);
     }
 }
 
@@ -83,6 +81,36 @@ void MyCheckCodepages()
     GetCPInfoExA(cur_oem_cp, 0, &cp_info);
     std::cout << "Current OEM codepage: name=["<<cp_info.CodePageName<<"], id="<<cur_oem_cp<<std::endl;
     printf("\t printf(): %s\n", cp_info.CodePageName); // Aren't there any conversions?
+}
+
+// Convert a wide Unicode string to an UTF8 string
+// Taken from https://stackoverflow.com/a/3999597
+std::string MyWcharToUtf8(const wchar_t* wstr)
+{
+    const size_t wlen = wcslen(wstr);
+    if( wlen == 0 )
+        return std::string();
+
+    // WideCharToMultiByte(): https://msdn.microsoft.com/en-us/library/dd374130(v=vs.85).aspx
+    int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (wlen + 1), NULL, 0, NULL, NULL);
+    std::string out_str( size_needed, 0 );
+    WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (wlen + 1), &out_str[0], size_needed, NULL, NULL);
+
+    return std::move(out_str);
+}
+
+// Convert an UTF8 string to a wide Unicode String
+// Taken from https://stackoverflow.com/a/3999597
+std::wstring MyUtf8ToWchar(const std::string &str)
+{
+    if( str.empty() )
+        return std::wstring();
+
+    // MultiByteToWideChar(): https://msdn.microsoft.com/en-us/library/windows/desktop/dd319072(v=vs.85).aspx
+    int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
+    std::wstring out_wstr( size_needed, 0 );
+    MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &out_wstr[0], size_needed);
+    return out_wstr;
 }
 
 int main()
@@ -124,7 +152,28 @@ int main()
     {
         wprintf_s(L"FindFirstFileW() -> filename [%s]\n", found_w.cFileName);
         MyWriteHexW(found_w.cFileName);
+
+        // UTF-8 conversion test
+        std::string u8str = MyWcharToUtf8(found_w.cFileName);
+        std::cout << "The above, UTF-8 converted: [" << u8str << "]" <<std::endl;
+        printf("\tprintf(): [%s]\n", u8str.c_str());
+        MyWriteHexA(u8str.c_str());
+
+        // Reverse conversion to widechar
+        std::wstring u16str = MyUtf8ToWchar(u8str);
+        // Compare with original
+        if (wcscmp(found_w.cFileName, u16str.c_str()) == 0)
+        {
+            // They're equal allright :)
+            std::cout << "UTF8<-->UTF16 conversion works OK" << std::endl;
+        }
+        else
+        {
+            // Dang! They're not equal for some reason :(
+            std::cout << "  !!  Converted string is not equal to source string  !!  " << std::endl;
+        }
     }
+
 
     system("pause");
 }
