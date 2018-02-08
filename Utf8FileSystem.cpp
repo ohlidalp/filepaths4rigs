@@ -32,6 +32,7 @@ void ClearError()
 
 std::wstring MSW_Utf8ToWchar(const char* path) // Inspired by https://stackoverflow.com/a/3999597
 {
+    // ClearError() intentionally not used here.
     if( path == nullptr || path[0] == 0 )
     {
         err.type = Error::PATH_NULL_OR_EMPTY;
@@ -60,6 +61,26 @@ DWORD MSW_GetFileAttrs(const char* path)
     // Function reference: https://msdn.microsoft.com/en-us/library/windows/desktop/aa364944(v=vs.85).aspx
     // File attribute constants: https://msdn.microsoft.com/en-us/library/windows/desktop/gg258117(v=vs.85).aspx
     return GetFileAttributesW(wpath.c_str());
+}
+
+/// @param wstr _must_ be NUL-terminated!
+std::string MSW_WcharToUtf8(const wchar_t* wstr) // From https://stackoverflow.com/a/3999597
+{
+    // ClearError() intentionally not used here.
+    if( wstr == nullptr || wstr[0] == 0 )
+    {
+        err.type = Error::PATH_NULL_OR_EMPTY;
+        return std::string();
+    }
+
+    const int dst_size = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], -1, nullptr, 0, nullptr, nullptr);
+    std::string dst(dst_size, 0); // Construct by length and initial value
+    err.raw_result = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], -1, &dst[0], dst_size, nullptr, nullptr);
+    if (err.raw_result <= 0)
+    {
+        err.type = Error::CONV_TO_UTF8_FAILED;
+    }
+    return std::move(dst);
 }
 
 #endif // _MSC_VER
@@ -183,6 +204,69 @@ bool WriteTextToFile(FILE* f, const char* text)
         err.type = Error::UNKNOWN;
         return false;
     }
+    return true;
+#else
+    #error "Not implemented"
+#endif
+}
+
+bool ListDirectory(std::vector<std::string>& filelist, const char* path)
+{
+    ClearError();
+    filelist.clear();
+#ifdef _MSC_VER
+    // "Listing the Files in a Directory": https://msdn.microsoft.com/en-us/library/windows/desktop/aa365200(v=vs.85).aspx
+
+    // Prepare the directory path
+
+    std::wstring wpath = MSW_Utf8ToWchar(path);
+    if (HasError())
+    {
+        return false;
+    }
+    wpath.pop_back(); // Remove NUL terminator - necessary for `append()` to take effect.
+    wpath.append(L"\\*"); // Use '*' as search string - required for WinAPI
+
+    // Find first file
+
+    WIN32_FIND_DATAW found; // Widechar version, https://msdn.microsoft.com/en-us/library/windows/desktop/aa365740(v=vs.85).aspx
+    HANDLE find_h = FindFirstFileW(wpath.c_str(), &found);
+    if (find_h == INVALID_HANDLE_VALUE)
+    {
+        err.raw_result = static_cast<int>(::GetLastError());
+        err.type = Error::MSW_FINDFIRSTFILE_FAILED;
+        return false;
+    }
+    filelist.push_back(MSW_WcharToUtf8(found.cFileName));
+    if (HasError())
+    {
+        FindClose(find_h);
+        filelist.clear();
+        return false;
+    }
+
+    // Find all other files
+
+    while (FindNextFileW(find_h, &found) != 0)
+    {
+        filelist.push_back(MSW_WcharToUtf8(found.cFileName));
+        if (HasError())
+        {
+            FindClose(find_h);
+            filelist.clear();
+            return false;
+        }
+    }
+    DWORD msw_err = ::GetLastError();
+    FindClose(find_h);
+    if (msw_err != ERROR_NO_MORE_FILES)
+    {
+        err.raw_result = msw_err;
+        err.type = Error::MSW_FINDNEXTFILE_FAILED;
+        filelist.clear();
+        return false;
+    }
+
     return true;
 #else
     #error "Not implemented"

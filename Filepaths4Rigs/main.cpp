@@ -25,44 +25,6 @@ static const char*    TEST_PANGRAM_UTF8 = u8"P\u0159\u00ED\u0161ern\u011B \u017E
 // 'ň' = 'LATIN SMALL LETTER N WITH CARON' (U+0148)       http://www.fileformat.info/info/unicode/char/0148/index.htm
 // 'ú' = 'LATIN SMALL LETTER U WITH ACUTE' (U+00FA)       http://www.fileformat.info/info/unicode/char/00FA/index.htm
 
-/*
-void MyFindClose(HANDLE& h)
-{
-    if (h == INVALID_HANDLE_VALUE)
-        return;
-
-    if (FindClose(h) == FALSE)
-    {
-        std::cout << "FindClose() failed, GetLastError():" << GetLastError() << std::endl;
-    }
-    h = INVALID_HANDLE_VALUE;
-}
-
-void MyWriteHexA(const char* str)
-{
-    std::cout << " * | hex| dec" << std::endl;
-    std::cout << "---+----+----" << std::endl;
-    size_t len = strlen(str);
-    for (size_t i = 0; i < len; ++i)
-    {
-        uint32_t c32 = str[i];
-        uint32_t c_masked = c32 & 0x000000ff; // Get only last 1 byte (= least signifficant byte)
-        wprintf(L" %c | %2x | %3d\n", c_masked, c_masked, c_masked);
-    }
-}
-
-void MyWriteHexW(const wchar_t* str)
-{
-    std::cout << " * |  hex | dec" << std::endl;
-    std::cout << "---+------+----" << std::endl;
-    size_t len = wcslen(str);
-    for (size_t i = 0; i < len; ++i)
-    {
-        wprintf(L" %c | %4x | %6d \n", str[i], str[i], str[i]);
-    }
-}
-*/
-
 int main()
 {
     // Create directory
@@ -158,56 +120,21 @@ int main()
         return -1;
     }
 
-    /*
-    // "Listing the Files in a Directory": https://msdn.microsoft.com/en-us/library/windows/desktop/aa365200(v=vs.85).aspx
-
-    MyCheckCodepages();
-
-    WIN32_FIND_DATAA found; // ANSI version, https://msdn.microsoft.com/en-us/library/windows/desktop/aa365740(v=vs.85).aspx
-    h = FindFirstFileA("Pangram*", &found);
-    if (h == INVALID_HANDLE_VALUE)
+    // Try listing the current dir
+    std::vector<std::string> files;
+    if (!u8fs::ListDirectory(files, "."))
     {
-        std::cout << "Failed to FindFirstFileA(), GetLastError():" << GetLastError() << std::endl;
+        printf("ListDirectory() failed\n");
+        return -1;
     }
     else
     {
-        std::cout <<std::endl << "FindFirstFileA() -> filename: [" << found.cFileName << "]" << std::endl;
-        MyWriteHexA(found.cFileName);
-    }
-
-    WIN32_FIND_DATAW found_w; // Wide version, https://msdn.microsoft.com/en-us/library/windows/desktop/aa365740(v=vs.85).aspx
-    h = FindFirstFileW(L"Pangram*", &found_w);
-    if (h == INVALID_HANDLE_VALUE)
-    {
-        std::cout << "Failed to FindFirstFileW(), GetLastError():" << GetLastError() << std::endl;
-    }
-    else
-    {
-        wprintf_s(L"FindFirstFileW() -> filename [%s]\n", found_w.cFileName);
-        MyWriteHexW(found_w.cFileName);
-
-        // UTF-8 conversion test
-        std::string u8str = WcharToUtf8(found_w.cFileName);
-        std::cout << "The above, UTF-8 converted: [" << u8str << "]" <<std::endl;
-        printf("\tprintf(): [%s]\n", u8str.c_str());
-        MyWriteHexA(u8str.c_str());
-
-        // Reverse conversion to widechar
-        std::wstring u16str = u8fs::MSW_Utf8ToWchar(u8str);
-        // Compare with original
-        if (wcscmp(found_w.cFileName, u16str.c_str()) == 0)
+        printf("Files in current directory:\n");
+        for (std::string& fname: files)
         {
-            // They're equal allright :)
-            std::cout << "UTF8<-->UTF16 conversion works OK" << std::endl;
-        }
-        else
-        {
-            // Dang! They're not equal for some reason :(
-            std::cout << "  !!  Converted string is not equal to source string  !!  " << std::endl;
+            printf("\t%s\n", fname.c_str());
         }
     }
-
-    ===============================  */
 
     printf("Hit ENTER to continue...");
     getchar();

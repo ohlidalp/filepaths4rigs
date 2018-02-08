@@ -2,7 +2,7 @@
 // Utf8FileSystem.h
 // ================
 //
-// Simplistic and minimal library for working with files using utf8-encoded narrow strings as paths.
+// Simplistic and minimal code snippet for working with files using utf8-encoded narrow strings as paths.
 // Designed primarily as educational example - performance is ignored, minimum input/error checking is done.
 // Intended use: include the files in your project and modify/extend as necessary.
 // Datatype `char` and subsequently `std::string` are considered to always be UTF-8 - inspired by http://utf8everywhere.org/
@@ -15,6 +15,9 @@
     #include <wchar.h> // FILE*
 #endif
 
+#include <string>
+#include <vector>
+
 namespace u8fs
 {
     extern const char* PATH_SLASH;
@@ -23,7 +26,10 @@ namespace u8fs
     {
         NONE = 0,
         UNKNOWN,
+        MSW_FINDFIRSTFILE_FAILED,
+        MSW_FINDNEXTFILE_FAILED,
         CONV_TO_WCHAR_FAILED,
+        CONV_TO_UTF8_FAILED,
         PATH_NULL_OR_EMPTY
     };
 
@@ -52,6 +58,9 @@ namespace u8fs
     /// Convenience for MSWindows, allows writing UTF-8 narrow text to file
     bool WriteTextToFile(FILE* f, const char* text);
 
+    /// Returns list of all file entries including implicit '.' (current dir) and '..' (parent dir) links.
+    /// @param filelist Existing content will be cleared!
+    bool ListDirectory(std::vector<std::string>& filelist, const char* path);
 
 } // namespace
 
