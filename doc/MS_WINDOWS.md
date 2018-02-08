@@ -58,7 +58,53 @@ Pokračujte stisknutím libovolné klávesy...
 
 ```
 
-TODO: Screenshot and text from 'U.S.English' computer.
+This is what I get from my PC at work (U.S. English localization):
 
-So far I didn't find MSDN page that would explicitly say "`*A()` functions returning paths convert Unicode via `CP_ACP`",
-but it's probably somewhere deep in there...
+![Screenshot on Win7 using U.S.English language](MSWindows-CP1252.png)
+
+```
+Current ANSI codepage: name=[1252  (ANSI - Latin I)], id=1252
+Current OEM codepage: name=[437   (OEM - United States)], id=437
+
+FindFirstFileA() -> filename: [Pangram_PrφÜerne]
+ * | hex| dec
+---+----+----
+ P | 50 |  80
+ a | 61 |  97
+ n | 6e | 110
+ g | 67 | 103
+ r | 72 | 114
+ a | 61 |  97
+ m | 6d | 109
+ _ | 5f |  95
+ P | 50 |  80
+ r | 72 | 114
+ φ | ed | 237
+ Ü | 9a | 154
+ e | 65 | 101
+ r | 72 | 114
+ n | 6e | 110
+ e | 65 | 101
+FindFirstFileW() -> filename [Pangram_P?φ?ern?]
+ * |  hex | dec
+---+------+----
+ P |   50 |     80
+ a |   61 |     97
+ n |   6e |    110
+ g |   67 |    103
+ r |   72 |    114
+ a |   61 |     97
+ m |   6d |    109
+ _ |   5f |     95
+ P |   50 |     80
+ ? |  159 |    345
+ φ |   ed |    237
+ ? |  161 |    353
+ e |   65 |    101
+ r |   72 |    114
+ n |   6e |    110
+ ? |  11b |    283
+Press any key to continue . . .
+```
+
+I couldn't find MSDN page that would explicitly say "`*A()` functions returning paths convert Unicode via `CP_ACP`", but it's fairly obvious.
